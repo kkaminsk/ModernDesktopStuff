@@ -12,7 +12,7 @@
 
 * **Log Location**: The script must prompt the user to choose a directory for the output logs, either their Documents folder or C:\\Windows\\temp.
 
-* **Folder Structure**: A new subfolder must be created within the chosen location with a name formatted as BitLockerLogs-DD-MM-YYYY-HH-MM4.
+* **Folder Structure**: A new subfolder must be created within the chosen location with a name formatted as BitLockerLogs-DD-MM-YYYY-HH-MM.
 
 * **Activity Log**: A log file named Get-BitLockerState.log should be created within the new folder to record the script's activities.
 
@@ -25,12 +25,12 @@ The script will collect the following information and save it to individual file
 * **BitLocker Volume Information**:  
   * **Command**: Get-BitLockerVolume.
 
-  * **Output File**: The output will be saved to a text file named Get-BitLockerVolme.txt.
+  * **Output File**: The output will be saved to a text file named Get-BitLockerVolume.txt.
 
 * **manage-bde Status**:  
   * **Command**: manage-bde \-status.
 
-  * **Output File**: The output will be saved to a text file named Manage-BDE-Status.txt.
+  * **Output File**: The output will be saved to a text file named Manage-BDE_Status.txt.
 
 * **TPM Status**:  
   * **Command**: Get-Tpm.
@@ -45,12 +45,12 @@ The script will collect the following information and save it to individual file
 * **BitLocker Event Logs**:  
   * **Log Source**: Microsoft-Windows-BitLocker-API/Management.
 
-  * **Output File**: The exported log will be saved to an Event Viewer file (.evt) named Microsoft-Windows-BitLocker-API\_Management.evt.
+  * **Output File**: The exported log will be saved to an Event Viewer file (.evtx) named Microsoft-Windows-BitLocker-API\_Management.evtx.
 
 * **System Event Logs**:  
   * **Log Source**: System.
 
-  * **Output File**: The exported log will be saved to an Event Viewer file (.evt) named system.evt.
+  * **Output File**: The exported log will be saved to an Event Viewer file (.evtx) named system.evtx.
 
 ---
 
