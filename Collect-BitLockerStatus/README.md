@@ -44,11 +44,12 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 ```
 4. When prompted, choose `1` (Documents) or `2` (Windows Temp) for the output location.
 
-   ![1](.\images\1.png)
+   ![1](https://github.com/kkaminsk/ModernDesktopStuff/blob/main/Collect-BitLockerStatus/images/1.png)
 
-5. Upon completion, the console will show the output folder path and activity log file.
+   Upon completion, the console will show the output folder path and activity log file.
 
-   ![2](.\images\2.png)
+   ![2](https://github.com/kkaminsk/ModernDesktopStuff/blob/main/Collect-BitLockerStatus/images/2.png)
+
 
 ## Output structure (example)
 ```
