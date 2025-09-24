@@ -44,11 +44,11 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 ```
 4. When prompted, choose `1` (Documents) or `2` (Windows Temp) for the output location.
 
-   ![image-20250924133902739](C:\Users\KevinKaminski\AppData\Roaming\Typora\typora-user-images\image-20250924133902739.png)
+   ![image-20250924133902739](.\images\1.png)
 
 5. Upon completion, the console will show the output folder path and activity log file.
 
-   ![image-20250924133939548](C:\Users\KevinKaminski\AppData\Roaming\Typora\typora-user-images\image-20250924133939548.png)
+   ![image-20250924133939548](C:\Users\KevinKaminski\Documents\GitHub\ModernDesktopStuff\Collect-BitLockerStatus\images\2.png)
 
 ## Output structure (example)
 ```
