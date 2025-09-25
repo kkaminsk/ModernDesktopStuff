@@ -17,6 +17,7 @@ Run this script in an elevated PowerShell session (Run as Administrator).
   - system.evtx
   - FVE_Policies.reg
   - MDM\BitlockerMDM.xml (when -MDM is used and BitLocker Area entries are found in MDMDiagReport.xml)
+  - <COMPUTERNAME>-<BitLockerLogs-...>.zip (when -ZIP is used; archive is created in the parent folder of the log root)
    - Get-BitLockerState.log (activity log)
 
   .PARAMETER MDM
@@ -28,12 +29,15 @@ Run this script in an elevated PowerShell session (Run as Administrator).
   If omitted, defaults to the user's Documents folder unless -UseTemp is specified.
   .PARAMETER UseTemp
   Optional switch. When present (and -OutputPath is not supplied), uses C:\\Windows\\Temp as the base folder.
+  .PARAMETER ZIP
+  Optional switch. When present, creates a ZIP archive of the output folder named `<COMPUTERNAME>-<BitLockerLogs-...>.zip` in the parent folder of the log root.
    !#>
 
   param(
     [switch] $MDM,
     [string] $OutputPath,
-    [switch] $UseTemp
+    [switch] $UseTemp,
+    [switch] $ZIP
   )
 
 Set-StrictMode -Version Latest
@@ -322,7 +326,41 @@ if ($MDM) {
     }
 }
 
+    # 9) Optionally ZIP the output folder
+    if ($ZIP) {
+        Invoke-Step -Name 'Create ZIP archive of outputs' -Action {
+            $comp = $env:COMPUTERNAME
+            $compSanitized = ($comp -replace '[^0-9A-Za-z_.-]','_')
+            $zipName = "$compSanitized-$folderName.zip"
+            $zipOutputPath = Join-Path (Split-Path -Parent $logRoot) $zipName
+            if (Test-Path $zipOutputPath) { Remove-Item -Path $zipOutputPath -Force -ErrorAction SilentlyContinue }
+            $compress = Get-Command -Name Compress-Archive -ErrorAction SilentlyContinue
+            if ($null -eq $compress) {
+                Write-Log "Compress-Archive not available in this PowerShell." 'ERROR'
+                Write-Log "STEP: ZIP archive failed; reason='Compress-Archive not available'"
+            } else {
+                try {
+                    Compress-Archive -Path (Join-Path $logRoot '*') -DestinationPath $zipOutputPath -Force
+                    $exists = Test-Path $zipOutputPath
+                    $sizeOK = $exists -and ((Get-Item $zipOutputPath).Length -gt 0)
+                    if ($exists -and $sizeOK) {
+                        Write-Log "ZIP archive created at '$zipOutputPath'"
+                        Write-Log "STEP: ZIP archive succeeded; output='$zipOutputPath'"
+                        $script:ZipPath = $zipOutputPath
+                    } else {
+                        Write-Log "ZIP archive may have failed (exists=$exists, sizeOK=$sizeOK)" 'WARN'
+                        Write-Log "STEP: ZIP archive failed; reason='empty or missing zip'; file='$zipOutputPath'"
+                    }
+                } catch {
+                    Write-Log "Failed to create ZIP: $($_.Exception.Message)" 'ERROR'
+                    Write-Log ("STEP: ZIP archive failed; reason='exception'; error='{0}'" -f $_.Exception.Message)
+                }
+            }
+        }
+    }
+
 Write-Log "All steps completed."
 Write-Host ""
 Write-Host "Output folder: $logRoot" -ForegroundColor Green
 Write-Host "Activity log: $logFile" -ForegroundColor Green
+if ($ZIP -and $script:ZipPath) { Write-Host "ZIP archive: $script:ZipPath" -ForegroundColor Green }

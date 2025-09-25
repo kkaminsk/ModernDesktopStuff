@@ -33,8 +33,10 @@
   - Exports BitLocker policy registry (FVE):
     - `HKLM\Software\Policies\Microsoft\FVE` → `FVE_Policies.reg`
   - (Optional) With `-MDM`:
-    - Generates (or reuses existing) MDM diagnostics under `MDM\` via `mdmdiagnosticstool.exe -out "<LogRoot>\\MDM"`
+    - Generates MDM diagnostics under `MDM\` via `mdmdiagnosticstool.exe -out "<LogRoot>\\MDM"`
     - Parses `MDMDiagReport.xml` for BitLocker Area nodes and saves them to `MDM\\BitlockerMDM.xml`
+  - (Optional) With `-ZIP`:
+    - Creates a ZIP archive of the output folder at `<BaseFolder>\\BitLockerLogs-<date>-<time>.zip` (parent of the log root)
 
 ## Usage
 
@@ -58,6 +60,12 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
   
   # Include MDM diagnostics and use Windows temp folder
   .\Collect-BitLockerState.ps1 -MDM -UseTemp
+  
+  # Create ZIP archive of outputs
+  .\Collect-BitLockerState.ps1 -ZIP
+  
+  # MDM + ZIP to Windows temp
+  .\Collect-BitLockerState.ps1 -MDM -ZIP -UseTemp
 ```
 
   ## Output structure (example)
@@ -87,6 +95,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
       ... Custom report ...
       BitlockerMDM.xml - BitLocker MDM configuration
   ```
+  
+  With `-ZIP`:
+  - A ZIP archive named `<COMPUTERNAME>-BitLockerLogs-<date>-<time>.zip` is created in the parent folder of the log root (e.g., Documents or C:\\Windows\\Temp).
 
 ## Troubleshooting
 - "This script must be run with Administrator privileges":
@@ -121,24 +132,24 @@ Markers:
 
 ### Log markers (STEP) for quick triage
 
-Use these markers to quickly determine MDM parsing outcomes in the activity log (`Get-BitLockerState.log`).
+Use these markers to quickly determine outcomes in `Get-BitLockerState.log`.
 
 Quick search example:
 
 ```powershell
-Select-String -Path "<LogRoot>\Get-BitLockerState.log" -Pattern "STEP: MDM .* parsing"
+Select-String -Path "<LogRoot>\Get-BitLockerState.log" -Pattern "STEP: MDM XML parsing|STEP: .* event log export|STEP: FVE registry export|STEP: ZIP archive"
 ```
 
 Markers:
 
-- HTML success: `STEP: MDM HTML parsing succeeded; output='<full path>'`
-- HTML failure (not found): `STEP: MDM HTML parsing failed; reason='MDMDiagReport.html not found'; folder='<MDM folder>'`
-- HTML failure (no section): `STEP: MDM HTML parsing failed; reason='BitLocker section not found'; file='<report path>'`
-- HTML failure (unreadable): `STEP: MDM HTML parsing failed; reason='file unreadable or empty'; file='<report path>'`
 - XML success: `STEP: MDM XML parsing succeeded; output='<full path>'; count=<Area nodes>`
 - XML failure (not found): `STEP: MDM XML parsing failed; reason='MDMDiagReport.xml not found'; folder='<MDM folder>'`
 - XML failure (no areas): `STEP: MDM XML parsing failed; reason='no BitLocker Area nodes'; file='<xml path>'`
 - XML failure (exception): `STEP: MDM XML parsing failed; reason='exception'; file='<xml path>'; error='<message>'`
+- ZIP success: `STEP: ZIP archive succeeded; output='<full path>'`
+- ZIP failure (no Compress-Archive): `STEP: ZIP archive failed; reason='Compress-Archive not available'`
+- ZIP failure (empty/missing): `STEP: ZIP archive failed; reason='empty or missing zip'; file='<full path>'`
+- ZIP failure (exception): `STEP: ZIP archive failed; reason='exception'; error='<message>'`
 
 ## Privacy
 The output may include sensitive system information and logs. Share the resulting folder only with trusted parties for support or troubleshooting.

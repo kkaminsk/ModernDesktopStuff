@@ -23,36 +23,34 @@
 ---
 
 ### **3\. Data Collection Commands and Output Files**
-
 {{ ... }}
 | `Reagentc.txt` | Always | `reagentc /info` |
 | `Microsoft-Windows-BitLocker-API_Management.evtx` | Always | `wevtutil epl 'Microsoft-Windows-BitLocker-API/Management'` (falls back to alternate channel if needed) |
 | `system.evtx` | Always | `wevtutil epl 'System'` |
 | `FVE_Policies.reg` | Always | `reg.exe export HKLM\Software\Policies\Microsoft\FVE FVE_Policies.reg /y` (may be empty/missing if key not present) |
-| `MDM\` (folder) | With `-MDM` | Output of `mdmdiagnosticstool.exe -out "<LOG_ROOT>\MDM"` |
-| `MDM\\MDMDiagReport.html` | With `-MDM` | MDM diagnostics report (generated or reused) |
-| `MDM\\BitlockerMDM.xml` | With `-MDM` and BitLocker Area entries found | Extracted `<Area>` nodes (PolicyAreaName = BitLocker) from `MDMDiagReport.xml` |
-| `Get-BitLockerState.log` | Always | Activity log with timestamps |
+| `MDM\` (folder) | With `-MDM` | Output of `mdmdiagnosticstool.exe -out "<LOG_ROOT>\MDM"`  | `MDM\\MDMDiagReport.html` | With `-MDM` | MDM diagnostics report (generated or reused) |
+  | `MDM\\BitlockerMDM.xml` | With `-MDM` and BitLocker Area entries found | Extracted `<Area>` nodes (PolicyAreaName = BitLocker) from `MDMDiagReport.xml` |
+  | `<COMPUTERNAME>-BitLockerLogs-<date>-<time>.zip` | With `-ZIP` | ZIP archive of the entire output folder (created in the parent of the log root) |
+  | `Get-BitLockerState.log` | Always | Activity log with timestamps |
 
 ---
 
 ### **6\. Parameters**
 {{ ... }}
-
-**MDM Parsing Note**
-* `-MDM` (switch):
-  - When specified, the script runs MDM diagnostics collection non-interactively. It reuses an existing `MDMDiagReport.html` in `<LOG_ROOT>\MDM` if present; otherwise, it invokes `mdmdiagnosticstool.exe -out "<LOG_ROOT>\MDM"`. The script then extracts BitLocker Area entries from `MDMDiagReport.xml` to `MDM\\BitlockerMDM.xml`.
-
+{{ ... }}
 * `-OutputPath <path>` (string, optional):
   - Fully qualified base folder into which the timestamped `BitLockerLogs-<date>-<time>` folder is created. If omitted, the script uses the user's Documents folder unless `-UseTemp` is set.
 
 * `-UseTemp` (switch, optional):
 
+ * `-ZIP` (switch, optional):
+  - When present, the script creates a ZIP archive named `<COMPUTERNAME>-BitLockerLogs-<date>-<time>.zip` in the parent folder of the log root once all collection steps complete.
+
 Example usages:
 
 * Default (Documents):
   - `...\Collect-BitLockerState.ps1`
- * Use Temp and MDM:
+{{ ... }}
   - `...\Collect-BitLockerState.ps1 -UseTemp -MDM`
  * Custom folder and MDM:
   - `...\Collect-BitLockerState.ps1 -OutputPath "D:\\Support\\Logs" -MDM`
@@ -66,7 +64,7 @@ Use these markers in the activity log (`Get-BitLockerState.log`) to quickly dete
 Quick search example:
 
 ```powershell
-Select-String -Path "<LOG_ROOT>\Get-BitLockerState.log" -Pattern "STEP: MDM .* parsing|STEP: .* event log export|STEP: FVE registry export"
+Select-String -Path "<LOG_ROOT>\Get-BitLockerState.log" -Pattern "STEP: MDM .* parsing|STEP: .* event log export|STEP: FVE registry export|STEP: ZIP archive"
 ```
 
 Markers:
