@@ -79,7 +79,13 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
   <...>\BitLockerLogs-DD-MM-YYYY-HH-MM\
     MDM\
       ... MDM artifacts ...
-      BitlockerMDM.xml
+      DeviceManagement-Enterprise-Diagnostics-Provider.evtx
+      MDMDiagReport.html
+      MDMDiagReport.xml
+      Microsoft-Windows-AAD.evtx
+      Microsoft-Windows-Shell-Core.evtx
+      ... Custom report ...
+      BitlockerMDM.xml - BitLocker MDM configuration.
   
   ## Testing MDM XML extraction
 
