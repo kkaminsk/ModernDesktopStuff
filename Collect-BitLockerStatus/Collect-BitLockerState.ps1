@@ -7,16 +7,34 @@ Collects BitLocker state information and related logs.
 Implements the application specification in "Collect-BitLockerState.ps1 App Specification.md".
 Run this script in an elevated PowerShell session (Run as Administrator).
 
-.OUTPUTS
-Creates a timestamped folder under either the user's Documents or C:\Windows\Temp, containing:
-- Get-BitLockerVolume.txt
-- Manage-BDE_Status.txt
-- Get-TPM.txt
-- Reagentc.txt
-- Microsoft-Windows-BitLocker-API_Management.evtx
-- system.evtx
-- Get-BitLockerState.log (activity log)
-!#>
+  .OUTPUTS
+  Creates a timestamped folder under either the user's Documents or C:\Windows\Temp, containing:
+  - Get-BitLockerVolume.txt
+  - Manage-BDE_Status.txt
+  - Get-TPM.txt
+  - Reagentc.txt
+  - Microsoft-Windows-BitLocker-API_Management.evtx
+  - system.evtx
+  - FVE_Policies.reg
+  - MDM\BitlockerMDM.xml (when -MDM is used and BitLocker Area entries are found in MDMDiagReport.xml)
+   - Get-BitLockerState.log (activity log)
+
+  .PARAMETER MDM
+  When specified, runs non-interactively: always runs mdmdiagnosticstool.exe to generate MDM logs into <LogRoot>\\MDM.
+  Extracts BitLocker Area nodes from MDMDiagReport.xml to <LogRoot>\\MDM\\BitlockerMDM.xml.
+ 
+  .PARAMETER OutputPath
+  Optional. Fully qualified path to the base folder where the timestamped BitLockerLogs-<date>-<time> folder will be created.
+  If omitted, defaults to the user's Documents folder unless -UseTemp is specified.
+  .PARAMETER UseTemp
+  Optional switch. When present (and -OutputPath is not supplied), uses C:\\Windows\\Temp as the base folder.
+   !#>
+
+  param(
+    [switch] $MDM,
+    [string] $OutputPath,
+    [switch] $UseTemp
+  )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -37,18 +55,16 @@ if (-not (Test-IsAdministrator)) {
     exit 1
 }
 
-# Prompt for output directory location
+# Resolve output directory (non-interactive)
 $documentsDir = [Environment]::GetFolderPath('MyDocuments')
 $tempDir = Join-Path $env:WINDIR 'Temp'
 
-Write-Host "Select output directory for logs:" -ForegroundColor Cyan
-Write-Host "  1) Documents: $documentsDir"
-Write-Host "  2) Windows Temp: $tempDir"
-$selection = Read-Host "Enter 1 or 2 [default: 1]"
-
-switch ($selection) {
-    '2' { $baseDir = $tempDir }
-    default { $baseDir = $documentsDir }
+if ($PSBoundParameters.ContainsKey('OutputPath') -and -not [string]::IsNullOrWhiteSpace($OutputPath)) {
+    $baseDir = $OutputPath
+} elseif ($UseTemp) {
+    $baseDir = $tempDir
+} else {
+    $baseDir = $documentsDir
 }
 
 # Create folder structure: BitLockerLogs-DD-MM-YYYY-HH-MM
@@ -81,6 +97,22 @@ function Get-WevtutilPath {
         return (Join-Path $env:WINDIR 'Sysnative\wevtutil.exe')
     }
     return (Join-Path $env:WINDIR 'System32\wevtutil.exe')
+}
+
+function Get-RegExePath {
+    # Ensure we use the 64-bit reg.exe on 64-bit systems, even if running a 32-bit PowerShell host
+    if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
+        return (Join-Path $env:WINDIR 'Sysnative\reg.exe')
+    }
+    return (Join-Path $env:WINDIR 'System32\reg.exe')
+}
+
+function Get-MdmDiagnosticsToolPath {
+    # Ensure we use the 64-bit mdmdiagnosticstool.exe on 64-bit systems, even if running a 32-bit PowerShell host
+    if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
+        return (Join-Path $env:WINDIR 'Sysnative\mdmdiagnosticstool.exe')
+    }
+    return (Join-Path $env:WINDIR 'System32\mdmdiagnosticstool.exe')
 }
 
 function Invoke-External {
@@ -186,6 +218,7 @@ Invoke-Step -Name 'Export BitLocker-API/Management event log' -Action {
         $sizeOK = (Test-Path $outfile) -and ((Get-Item $outfile).Length -gt 0)
         if ($eplExit -eq 0 -and $sizeOK) {
             Write-Log "Export succeeded from '$channel' to '$outfile'"
+            Write-Log "STEP: BitLocker event log export succeeded; channel='$channel'; output='$outfile'"
             $exported = $true
             break
         } else {
@@ -209,6 +242,87 @@ Invoke-Step -Name 'Export System event log' -Action {
     & $wevtutil epl 'System' $outfile /ow:true
 }
 
+# 7) Export BitLocker Policy Registry (FVE) -> FVE_Policies.reg
+Invoke-Step -Name 'Export BitLocker policy registry (HKLM\Software\Policies\Microsoft\FVE)' -Action {
+    $regFile = Join-Path $logRoot 'FVE_Policies.reg'
+    $capture = Join-Path $logRoot 'FVE_Policies_export.txt'
+    $regExe = Get-RegExePath
+    if (-not (Test-Path $regExe)) {
+        Write-Log "reg.exe not found at $regExe. Skipping." 'WARN'
+        return
+    }
+    & $regExe export 'HKLM\Software\Policies\Microsoft\FVE' $regFile /y 2>&1 | Tee-Object -FilePath $capture | Out-Null
+    $exit = $LASTEXITCODE
+    $exists = Test-Path $regFile
+    $sizeOK = $exists -and ((Get-Item $regFile).Length -gt 0)
+    if ($exit -eq 0 -and $sizeOK) {
+        Write-Log "Registry export succeeded to '$regFile'"
+    } else {
+        Write-Log "Registry export failed (exit $exit, exists=$exists, sizeOK=$sizeOK). The key may not exist on this system." 'WARN'
+    }
+}
+
+# 8) Optionally collect MDM diagnostics using mdmdiagnosticstool.exe when -MDM is specified
+if ($MDM) {
+    Invoke-Step -Name 'Collect MDM diagnostics (mdmdiagnosticstool.exe)' -Action {
+        $mdmDir = Join-Path $logRoot 'MDM'
+        if (-not (Test-Path $mdmDir)) { New-Item -ItemType Directory -Path $mdmDir -Force | Out-Null }
+        # Always generate MDM diagnostics using mdmdiagnosticstool.exe
+        $tool = Get-MdmDiagnosticsToolPath
+        if (-not (Test-Path $tool)) {
+            Write-Log "mdmdiagnosticstool.exe not found at $tool. Skipping MDM diagnostics." 'WARN'
+        } else {
+            $capture = Join-Path $mdmDir 'mdmdiagnosticstool_output.txt'
+            $exit = Invoke-External -FilePath $tool -Arguments @('-out', $mdmDir) -OutputCaptureFile $capture
+            $fileCount = (Get-ChildItem -Path $mdmDir -Force -File | Measure-Object).Count
+            if ($exit -eq 0 -and $fileCount -gt 0) {
+                Write-Log "MDM diagnostics collection completed. Files saved under '$mdmDir'"
+            } else {
+                Write-Log "MDM diagnostics collection may have failed (exit $exit, files=$fileCount)." 'WARN'
+            }
+        }
+        
+        # HTML parsing removed; proceed with XML extraction only
+
+        # Additionally, extract BitLocker Area entries from MDMDiagReport.xml into BitlockerMDM.xml under the MDM folder
+        $xmlReport = Get-ChildItem -Path $mdmDir -Recurse -File -ErrorAction SilentlyContinue |
+                     Where-Object { $_.Name -match '^MDMDiagReport\.xml$' } |
+                     Select-Object -First 1
+        if ($xmlReport) {
+            try {
+                [xml]$xmlDoc = Get-Content -Path $xmlReport.FullName -Raw
+                $xpath = "//Area[translate(PolicyAreaName/text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='bitlocker']"
+                $nodes = $xmlDoc.SelectNodes($xpath)
+                if ($nodes -and $nodes.Count -gt 0) {
+                    $outDoc = New-Object System.Xml.XmlDocument
+                    $decl = $outDoc.CreateXmlDeclaration("1.0","utf-8",$null)
+                    $outDoc.AppendChild($decl) | Out-Null
+                    $root = $outDoc.CreateElement("BitlockerAreas")
+                    $outDoc.AppendChild($root) | Out-Null
+                    foreach ($n in $nodes) {
+                        $imported = $outDoc.ImportNode($n, $true)
+                        [void]$root.AppendChild($imported)
+                    }
+                    $destXml = Join-Path $mdmDir 'BitlockerMDM.xml'
+                    $outDoc.Save($destXml)
+                    Write-Log "Extracted $($nodes.Count) Area node(s) from '$($xmlReport.FullName)' to '$destXml'"
+                    Write-Log "STEP: MDM XML parsing succeeded; output='$destXml'; count=$($nodes.Count)"
+                } else {
+                    Write-Log "No Area entries with PolicyAreaName='BitLocker' found in '$($xmlReport.FullName)'." 'WARN'
+                    Write-Log "STEP: MDM XML parsing failed; reason='no BitLocker Area nodes'; file='$($xmlReport.FullName)'"
+                }
+            } catch {
+                Write-Log "Failed to parse '$($xmlReport.FullName)': $($_.Exception.Message)" 'ERROR'
+                Write-Log ("STEP: MDM XML parsing failed; reason='exception'; file='{0}'; error='{1}'" -f $xmlReport.FullName, $_.Exception.Message)
+            }
+        } else {
+            Write-Log "MDMDiagReport.xml not found under '$mdmDir'." 'WARN'
+            Write-Log "STEP: MDM XML parsing failed; reason='MDMDiagReport.xml not found'; folder='$mdmDir'"
+        }
+    }
+}
+
 Write-Log "All steps completed."
-Write-Host ""; Write-Host "Output folder: $logRoot" -ForegroundColor Green
+Write-Host ""
+Write-Host "Output folder: $logRoot" -ForegroundColor Green
 Write-Host "Activity log: $logFile" -ForegroundColor Green
