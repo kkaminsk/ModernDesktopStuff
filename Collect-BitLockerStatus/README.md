@@ -12,7 +12,7 @@
   - `Get-Tpm`
   - `reagentc.exe`
   - `wevtutil.exe`
-  - `reg.exe`
+  - `reg.exe`(Group Policy settings)
   - (Optional) `mdmdiagnosticstool.exe` for MDM diagnostics
 
 ## What the script does
@@ -64,14 +64,14 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
   Without `-MDM`:
   ```
   <Documents or C:\Windows\Temp or OutputPath>\BitLockerLogs-DD-MM-YYYY-HH-MM\
-    Get-BitLockerVolume.txt
-    Manage-BDE_Status.txt
-    Get-TPM.txt
-    Reagentc.txt
-    Microsoft-Windows-BitLocker-API_Management.evtx
-    system.evtx
-    FVE_Policies.reg
-    Get-BitLockerState.log
+    Get-BitLockerVolume.txt - BitLocker overview
+    Manage-BDE_Status.txt - BitLocker status
+    Get-TPM.txt - Check TPM status
+    Reagentc.txt - Check Windows PE state
+    Microsoft-Windows-BitLocker-API_Management.evtx - BitLocker log
+    system.evtx - system event log
+    FVE_Policies.reg - Group Policy settings
+    Get-BitLockerState.log - log for this script
   ```
 
   With `-MDM` (additional items):
@@ -80,23 +80,12 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
     MDM\
       ... MDM artifacts ...
       DeviceManagement-Enterprise-Diagnostics-Provider.evtx
-      MDMDiagReport.html
-      MDMDiagReport.xml
-      Microsoft-Windows-AAD.evtx
-      Microsoft-Windows-Shell-Core.evtx
+      MDMDiagReport.html - MDM diagnostic report
+      MDMDiagReport.xml - MDM diagnostic report in XML format
+      Microsoft-Windows-AAD.evtx - Entra ID log
+      Microsoft-Windows-Shell-Core.evtx - Windows shell log
       ... Custom report ...
-      BitlockerMDM.xml - BitLocker MDM configuration.
-  
-  ## Testing MDM XML extraction
-
-To validate XML extraction without generating full diagnostics, place an `MDMDiagReport.xml` in the `MDM` folder and run with `-MDM`.
-
-  Example:
-
-  ```powershell
-  New-Item -ItemType Directory -Path "<LogRoot>\MDM" -Force | Out-Null
-  Copy-Item "<path>\MDMDiagReport.xml" "<LogRoot>\MDM\MDMDiagReport.xml" -Force
-  .\Collect-BitLockerState.ps1 -OutputPath "<LogRootParent>" -MDM
+      BitlockerMDM.xml - BitLocker MDM configuration
   ```
 
 ## Troubleshooting
