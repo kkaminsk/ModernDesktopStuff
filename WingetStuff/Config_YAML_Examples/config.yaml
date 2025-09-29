@@ -39,7 +39,7 @@ properties:
       directives:
         description: "Install Docker"
       settings:
-        id: XP8CBJ40XLBWKX
+        id: Docker.DockerDesktop
         source: winget
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
@@ -47,7 +47,7 @@ properties:
       directives:
         description: "Install OpenSSL"
       settings:
-        id: OpenSSL.OpenSSL
+        id: FireDaemon.OpenSSL
         source: winget
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
