@@ -1,0 +1,139 @@
+# Save this content as config.yaml
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installVSCode
+      directives:
+        description: "Install Visual Studio Code"
+      settings:
+        id: Microsoft.VisualStudioCode
+        source: winget
+  
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installWinMerge
+      directives:
+        description: "Install WinMerge"
+      settings:
+        id: WinMerge.WinMerge
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installPutty
+      directives:
+        description: "Install Putty"
+      settings:
+        id: PuTTY.PuTTY
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installgit 
+      directives:
+        description: "Install Git"
+      settings:
+        id: Git.Git
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installdocker
+      directives:
+        description: "Install Docker"
+      settings:
+        id: XP8CBJ40XLBWKX
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installdocker
+      directives:
+        description: "Install Docker"
+        settings:
+        id: XP8CBJ40XLBWKX
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installopenssl
+      directives:
+        description: "Install OpenSSL"
+      settings:
+        id: OpenSSL.OpenSSL
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installtypora
+      directives:
+        description: "Install Typora"
+      settings:
+        id: appmakes.Typora
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installazurecli
+      directives:
+        description: "Install Azure CLI"
+      settings:
+        id: Microsoft.AzureCLI
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installnodejs
+      directives:
+        description: "Install Node.js"
+      settings:
+        id: OpenJS.NodeJS
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installpython
+      directives:
+        description: "Install Python 3.13"
+      settings:
+        id: Python.Python.3.13
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: install7zip
+      directives:
+        description: "Install 7-Zip"
+      settings:
+        id: 7zip.7zip
+        source: winget
+  
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installamazoncli
+      directives:
+        description: "Install Amazon CLI"
+      settings:
+        id: Amazon.AWSCLI
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installgooglechrome
+      directives:
+        description: "Install Google Chrome"
+      settings:
+        id: Google.Chrome.EXE
+        source: winget
+    
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installpowershell
+      directives:
+        description: "Install PowerShell"
+      settings:
+        id: Microsoft.PowerShell
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installsnagit
+      directives:
+        description: "Install Snagit"
+      settings:
+        id: TechSmith.Snagit.2024
+        source: winget
+  
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installgooglecloudsdk
+      directives:
+        description: "Install Google Cloud SDK"
+      settings:
+        id: Google.CloudSDK
+        source: winget
