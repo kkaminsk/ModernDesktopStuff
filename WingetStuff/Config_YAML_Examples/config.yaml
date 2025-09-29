@@ -43,14 +43,6 @@ properties:
         source: winget
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: installdocker
-      directives:
-        description: "Install Docker"
-        settings:
-        id: XP8CBJ40XLBWKX
-        source: winget
-
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: installopenssl
       directives:
         description: "Install OpenSSL"
